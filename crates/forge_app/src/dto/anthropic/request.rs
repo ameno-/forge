@@ -165,6 +165,31 @@ pub struct Message {
     pub role: Role,
 }
 
+fn thinking_content_from_reasoning(
+    reasoning_details: &[forge_domain::ReasoningFull],
+) -> Option<Content> {
+    let thinking = reasoning_details
+        .iter()
+        .filter_map(|reasoning| reasoning.text.as_deref())
+        .collect::<String>();
+    let signature = reasoning_details.iter().find_map(|reasoning| {
+        reasoning
+            .signature
+            .as_deref()
+            .filter(|signature| !signature.is_empty())
+            .map(str::to_owned)
+    });
+
+    if thinking.is_empty() {
+        return None;
+    }
+
+    Some(Content::Thinking {
+        signature,
+        thinking: Some(thinking),
+    })
+}
+
 impl TryFrom<ContextMessage> for Message {
     type Error = anyhow::Error;
     fn try_from(value: ContextMessage) -> std::result::Result<Self, Self::Error> {
@@ -179,15 +204,10 @@ impl TryFrom<ContextMessage> for Message {
                         + 1,
                 );
 
-                if let Some(reasoning) = chat_message.reasoning_details
-                    && let Some((sig, text)) = reasoning.into_iter().find_map(|reasoning| {
-                        match (reasoning.signature, reasoning.text) {
-                            (Some(sig), Some(text)) => Some((sig, text)),
-                            _ => None,
-                        }
-                    })
-                {
-                    content.push(Content::Thinking { signature: Some(sig), thinking: Some(text) });
+                if let Some(thinking) = thinking_content_from_reasoning(
+                    &chat_message.reasoning_details.clone().unwrap_or_default(),
+                ) {
+                    content.push(thinking);
                 }
 
                 if !chat_message.content.is_empty() {
@@ -469,7 +489,10 @@ impl TryFrom<forge_domain::ToolDefinition> for ToolDefinition {
 
 #[cfg(test)]
 mod tests {
-    use forge_domain::{Context, ReasoningConfig};
+    use forge_domain::{
+        Context, ReasoningConfig, ReasoningDetail, Role as DomainRole, ToolCallArguments,
+        ToolCallFull, ToolCallId, ToolName,
+    };
     use pretty_assertions::assert_eq;
 
     use super::*;
@@ -592,10 +615,54 @@ mod tests {
     }
 
     #[test]
-    fn test_context_conversion_stream_explicit_false() {
-        let fixture = Context::default().stream(false);
-        let actual = Request::try_from(fixture).unwrap();
+    fn test_assistant_message_includes_thinking_for_all_reasoning_segments_before_tool_calls() {
+        let message = forge_domain::TextMessage {
+            role: DomainRole::Assistant,
+            content: String::new(),
+            raw_content: None,
+            tool_calls: Some(vec![ToolCallFull {
+                name: ToolName::from("shell"),
+                call_id: Some(ToolCallId::from("toolu_123")),
+                arguments: ToolCallArguments::from_json(r#"{"cmd":"ls"}"#),
+                thought_signature: None,
+            }]),
+            thought_signature: None,
+            model: None,
+            reasoning_details: Some(vec![
+                ReasoningDetail {
+                    text: Some("first ".to_string()),
+                    signature: None,
+                    ..Default::default()
+                },
+                ReasoningDetail {
+                    text: Some("second".to_string()),
+                    signature: Some("sig_abc".to_string()),
+                    ..Default::default()
+                },
+            ]),
+            droppable: false,
+        };
 
-        assert_eq!(actual.stream, Some(false));
+        let actual = Message::try_from(ContextMessage::Text(message)).unwrap();
+        let actual_json = serde_json::to_value(&actual).unwrap();
+
+        let expected = serde_json::json!({
+            "role": "assistant",
+            "content": [
+                {
+                    "type": "thinking",
+                    "signature": "sig_abc",
+                    "thinking": "first second"
+                },
+                {
+                    "type": "tool_use",
+                    "id": "toolu_123",
+                    "input": {"cmd": "ls"},
+                    "name": "shell"
+                }
+            ]
+        });
+
+        assert_eq!(actual_json, expected);
     }
 }

@@ -16,12 +16,17 @@ pub struct ListModelResponse {
 pub struct Model {
     pub id: String,
     pub display_name: Option<String>,
+    pub context_length: Option<u64>,
+    pub supports_reasoning: Option<bool>,
+    #[serde(default)]
+    pub supports_image_in: bool,
 }
 
 impl From<Model> for forge_domain::Model {
     fn from(value: Model) -> Self {
-        let context_length = get_context_length(&value.id);
-        let input_modalities = if value.id.contains("claude-3")
+        let context_length = value.context_length.or_else(|| get_context_length(&value.id));
+        let input_modalities = if value.supports_image_in
+            || value.id.contains("claude-3")
             || value.id.contains("claude-4")
             || value.id.contains("claude-sonnet")
             || value.id.contains("claude-opus")
@@ -42,7 +47,7 @@ impl From<Model> for forge_domain::Model {
             context_length,
             tools_supported: Some(true),
             supports_parallel_tool_calls: None,
-            supports_reasoning: None,
+            supports_reasoning: value.supports_reasoning,
             input_modalities,
         }
     }
@@ -515,6 +520,26 @@ mod tests {
     }
 
     #[test]
+    fn test_model_conversion_uses_provider_metadata_for_kimi() {
+        let model = Model {
+            id: "kimi-for-coding".to_string(),
+            display_name: Some("Kimi For Coding".to_string()),
+            context_length: Some(262_144),
+            supports_reasoning: Some(true),
+            supports_image_in: true,
+        };
+
+        let domain_model: forge_domain::Model = model.into();
+
+        assert_eq!(domain_model.context_length, Some(262_144));
+        assert_eq!(domain_model.supports_reasoning, Some(true));
+        assert_eq!(
+            domain_model.input_modalities,
+            vec![forge_domain::InputModality::Text, forge_domain::InputModality::Image]
+        );
+    }
+
+    #[test]
     fn test_usage_conversion_with_cache_read_tokens() {
         use forge_domain::TokenCount;
 
@@ -747,6 +772,9 @@ mod tests {
         let fixture = Model {
             id: "claude-sonnet-4-5-20250929".to_string(),
             display_name: Some("Claude 3.5 Sonnet (New)".to_string()),
+            context_length: None,
+            supports_reasoning: None,
+            supports_image_in: false,
         };
 
         let actual: forge_domain::Model = fixture.into();
@@ -761,6 +789,9 @@ mod tests {
         let fixture = Model {
             id: "unknown-claude-model".to_string(),
             display_name: Some("Unknown Model".to_string()),
+            context_length: None,
+            supports_reasoning: None,
+            supports_image_in: false,
         };
 
         let actual: forge_domain::Model = fixture.into();
