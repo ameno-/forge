@@ -50,6 +50,7 @@ impl ProviderId {
     pub const OPEN_ROUTER: ProviderId = ProviderId(Cow::Borrowed("open_router"));
     pub const REQUESTY: ProviderId = ProviderId(Cow::Borrowed("requesty"));
     pub const ZAI: ProviderId = ProviderId(Cow::Borrowed("zai"));
+    pub const KIMI_CODING: ProviderId = ProviderId(Cow::Borrowed("kimi_coding"));
     pub const ZAI_CODING: ProviderId = ProviderId(Cow::Borrowed("zai_coding"));
     pub const CEREBRAS: ProviderId = ProviderId(Cow::Borrowed("cerebras"));
     pub const XAI: ProviderId = ProviderId(Cow::Borrowed("xai"));
@@ -81,6 +82,7 @@ impl ProviderId {
             ProviderId::OPEN_ROUTER,
             ProviderId::REQUESTY,
             ProviderId::ZAI,
+            ProviderId::KIMI_CODING,
             ProviderId::ZAI_CODING,
             ProviderId::CEREBRAS,
             ProviderId::XAI,
@@ -124,6 +126,7 @@ impl ProviderId {
             "openai_responses_compatible" => "OpenAIResponsesCompatible".to_string(),
             "io_intelligence" => "IOIntelligence".to_string(),
             "codex" => "Codex".to_string(),
+            "kimi_coding" => "KimiCoding".to_string(),
             _ => {
                 // For other providers, use UpperCamelCase conversion
                 use convert_case::{Case, Casing};
@@ -150,6 +153,7 @@ impl std::str::FromStr for ProviderId {
             "open_router" => ProviderId::OPEN_ROUTER,
             "requesty" => ProviderId::REQUESTY,
             "zai" => ProviderId::ZAI,
+            "kimi_coding" => ProviderId::KIMI_CODING,
             "zai_coding" => ProviderId::ZAI_CODING,
             "cerebras" => ProviderId::CEREBRAS,
             "xai" => ProviderId::XAI,
@@ -210,6 +214,9 @@ pub struct Provider<T> {
     #[serde(default)]
     pub url_params: Vec<crate::URLParam>,
     pub credential: Option<AuthCredential>,
+    /// Custom HTTP headers to include in API requests for this provider.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub custom_headers: Option<std::collections::HashMap<String, String>>,
 }
 
 /// Type alias for a provider with template URLs (not yet rendered)
@@ -343,6 +350,7 @@ mod test_helpers {
             auth_methods: vec![crate::AuthMethod::ApiKey],
             url_params: vec![],
             credential: make_credential(ProviderId::ZAI, key),
+            custom_headers: None,
             models: Some(ModelSource::Url(
                 Url::parse("https://api.z.ai/api/paas/v4/models").unwrap(),
             )),
@@ -359,6 +367,7 @@ mod test_helpers {
             auth_methods: vec![crate::AuthMethod::ApiKey],
             url_params: vec![],
             credential: make_credential(ProviderId::ZAI_CODING, key),
+            custom_headers: None,
             models: Some(ModelSource::Url(
                 Url::parse("https://api.z.ai/api/paas/v4/models").unwrap(),
             )),
@@ -375,6 +384,7 @@ mod test_helpers {
             auth_methods: vec![crate::AuthMethod::ApiKey],
             url_params: vec![],
             credential: make_credential(ProviderId::OPENAI, key),
+            custom_headers: None,
             models: Some(ModelSource::Url(
                 Url::parse("https://api.openai.com/v1/models").unwrap(),
             )),
@@ -391,6 +401,7 @@ mod test_helpers {
             auth_methods: vec![crate::AuthMethod::ApiKey],
             url_params: vec![],
             credential: make_credential(ProviderId::XAI, key),
+            custom_headers: None,
             models: Some(ModelSource::Url(
                 Url::parse("https://api.x.ai/v1/models").unwrap(),
             )),
@@ -433,6 +444,7 @@ mod test_helpers {
                 .map(|&s| s.to_string().into())
                 .collect(),
             credential: make_credential(ProviderId::VERTEX_AI, key),
+            custom_headers: None,
             models: Some(ModelSource::Url(Url::parse(&model_url).unwrap())),
         }
     }
@@ -448,6 +460,7 @@ mod test_helpers {
             auth_methods: vec![crate::AuthMethod::ApiKey],
             url_params: vec![],
             credential: make_credential(ProviderId::IO_INTELLIGENCE, key),
+            custom_headers: None,
             models: Some(ModelSource::Url(
                 Url::parse("https://api.intelligence.io.solutions/api/v1/models").unwrap(),
             )),
@@ -481,6 +494,7 @@ mod test_helpers {
                 .map(|&s| s.to_string().into())
                 .collect(),
             credential: make_credential(ProviderId::AZURE, key),
+            custom_headers: None,
             models: Some(ModelSource::Url(Url::parse(&model_url).unwrap())),
         }
     }
@@ -521,6 +535,7 @@ mod tests {
         );
         assert_eq!(ProviderId::IO_INTELLIGENCE.to_string(), "IOIntelligence");
         assert_eq!(ProviderId::CODEX.to_string(), "Codex");
+        assert_eq!(ProviderId::KIMI_CODING.to_string(), "KimiCoding");
     }
 
     #[test]
@@ -545,11 +560,19 @@ mod tests {
     }
 
     #[test]
+    fn test_kimi_coding_from_str() {
+        let actual = ProviderId::from_str("kimi_coding").unwrap();
+        let expected = ProviderId::KIMI_CODING;
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
     fn test_codex_in_built_in_providers() {
         let built_in = ProviderId::built_in_providers();
         assert!(built_in.contains(&ProviderId::CODEX));
         assert!(built_in.contains(&ProviderId::GEMINI_API));
         assert!(built_in.contains(&ProviderId::MINIMAX));
+        assert!(built_in.contains(&ProviderId::KIMI_CODING));
         assert!(built_in.contains(&ProviderId::OPENAI_RESPONSES_COMPATIBLE));
     }
 
@@ -573,6 +596,7 @@ mod tests {
             models: Some(ModelSource::Url(
                 Url::from_str("https://api.intelligence.io.solutions/api/v1/models").unwrap(),
             )),
+            custom_headers: None,
         };
         assert_eq!(actual, expected);
     }
@@ -596,6 +620,7 @@ mod tests {
             models: Some(ModelSource::Url(
                 Url::from_str("https://api.x.ai/v1/models").unwrap(),
             )),
+            custom_headers: None,
         };
         assert_eq!(actual, expected);
     }

@@ -3,6 +3,7 @@ use url::Url;
 
 use super::drop_tool_call::DropToolCalls;
 use super::github_copilot_reasoning::GitHubCopilotReasoning;
+use super::kimi_reasoning::KimiReasoning;
 use super::make_cerebras_compat::MakeCerebrasCompat;
 use super::make_openai_compat::MakeOpenAiCompat;
 use super::minimax::SetMinimaxParams;
@@ -57,6 +58,8 @@ impl Transformer for ProviderPipeline<'_> {
         let github_copilot_reasoning =
             GitHubCopilotReasoning.when(move |_| provider.id == ProviderId::GITHUB_COPILOT);
 
+        let kimi_reasoning = KimiReasoning.when(move |_| provider.id == ProviderId::KIMI_CODING);
+
         let cerebras_compat = MakeCerebrasCompat.when(move |_| provider.id == ProviderId::CEREBRAS);
 
         let trim_tool_call_ids = TrimToolCallIds.when(move |_| provider.id == ProviderId::OPENAI);
@@ -67,6 +70,7 @@ impl Transformer for ProviderPipeline<'_> {
             .pipe(set_reasoning_effort)
             .pipe(open_ai_compat)
             .pipe(github_copilot_reasoning)
+            .pipe(kimi_reasoning)
             .pipe(cerebras_compat)
             .pipe(trim_tool_call_ids)
             .pipe(NormalizeToolSchema);
@@ -126,6 +130,7 @@ mod tests {
             auth_methods: vec![forge_domain::AuthMethod::ApiKey],
             url_params: vec![],
             credential: make_credential(ProviderId::FORGE, key),
+            custom_headers: None,
             models: Some(ModelSource::Url(
                 Url::parse("https://antinomy.ai/api/v1/models").unwrap(),
             )),
@@ -141,6 +146,7 @@ mod tests {
             auth_methods: vec![forge_domain::AuthMethod::ApiKey],
             url_params: vec![],
             credential: make_credential(ProviderId::ZAI, key),
+            custom_headers: None,
             models: Some(ModelSource::Url(
                 Url::parse("https://api.z.ai/api/paas/v4/models").unwrap(),
             )),
@@ -156,6 +162,7 @@ mod tests {
             auth_methods: vec![forge_domain::AuthMethod::ApiKey],
             url_params: vec![],
             credential: make_credential(ProviderId::ZAI_CODING, key),
+            custom_headers: None,
             models: Some(ModelSource::Url(
                 Url::parse("https://api.z.ai/api/paas/v4/models").unwrap(),
             )),
@@ -171,6 +178,7 @@ mod tests {
             auth_methods: vec![forge_domain::AuthMethod::ApiKey],
             url_params: vec![],
             credential: make_credential(ProviderId::OPENAI, key),
+            custom_headers: None,
             models: Some(ModelSource::Url(
                 Url::parse("https://api.openai.com/v1/models").unwrap(),
             )),
@@ -186,8 +194,25 @@ mod tests {
             auth_methods: vec![forge_domain::AuthMethod::ApiKey],
             url_params: vec![],
             credential: make_credential(ProviderId::XAI, key),
+            custom_headers: None,
             models: Some(ModelSource::Url(
                 Url::parse("https://api.x.ai/v1/models").unwrap(),
+            )),
+        }
+    }
+
+    fn kimi_coding(key: &str) -> Provider<Url> {
+        Provider {
+            id: ProviderId::KIMI_CODING,
+            provider_type: Default::default(),
+            response: Some(ProviderResponse::OpenAI),
+            url: Url::parse("https://api.kimi.com/coding/v1/chat/completions").unwrap(),
+            auth_methods: vec![forge_domain::AuthMethod::ApiKey],
+            url_params: vec![],
+            credential: make_credential(ProviderId::KIMI_CODING, key),
+            custom_headers: None,
+            models: Some(ModelSource::Url(
+                Url::parse("https://api.kimi.com/coding/v1/models").unwrap(),
             )),
         }
     }
@@ -201,6 +226,7 @@ mod tests {
             auth_methods: vec![forge_domain::AuthMethod::ApiKey],
             url_params: vec![],
             credential: make_credential(ProviderId::REQUESTY, key),
+            custom_headers: None,
             models: Some(ModelSource::Url(
                 Url::parse("https://api.requesty.ai/v1/models").unwrap(),
             )),
@@ -216,6 +242,7 @@ mod tests {
             auth_methods: vec![forge_domain::AuthMethod::ApiKey],
             url_params: vec![],
             credential: make_credential(ProviderId::OPEN_ROUTER, key),
+            custom_headers: None,
             models: Some(ModelSource::Url(
                 Url::parse("https://openrouter.ai/api/v1/models").unwrap(),
             )),
@@ -231,6 +258,7 @@ mod tests {
             auth_methods: vec![forge_domain::AuthMethod::ApiKey],
             url_params: vec![],
             credential: make_credential(ProviderId::ANTHROPIC, key),
+            custom_headers: None,
             models: Some(ModelSource::Url(
                 Url::parse("https://api.anthropic.com/v1/models").unwrap(),
             )),
@@ -319,6 +347,49 @@ mod tests {
     }
 
     #[test]
+    fn test_kimi_provider_sets_reasoning_content_for_assistant_tool_call_messages() {
+        let provider = kimi_coding("kimi");
+        let fixture = Request::default().messages(vec![crate::dto::openai::Message {
+            role: crate::dto::openai::Role::Assistant,
+            content: Some(crate::dto::openai::MessageContent::Text(String::new())),
+            name: None,
+            tool_call_id: None,
+            tool_calls: Some(vec![crate::dto::openai::ToolCall {
+                id: Some(forge_domain::ToolCallId::new("call_1")),
+                r#type: crate::dto::openai::FunctionType,
+                function: crate::dto::openai::FunctionCall {
+                    name: Some(forge_domain::ToolName::new("shell")),
+                    arguments: "{}".to_string(),
+                },
+                extra_content: None,
+            }]),
+            reasoning_details: Some(vec![crate::dto::openai::ReasoningDetail {
+                r#type: "reasoning.text".to_string(),
+                text: Some("Need to inspect cwd first".to_string()),
+                signature: None,
+                data: None,
+                id: None,
+                format: None,
+                index: None,
+            }]),
+            reasoning_text: None,
+            reasoning_opaque: None,
+            reasoning_content: None,
+            extra_content: None,
+        }]);
+
+        let mut pipeline = ProviderPipeline::new(&provider);
+        let actual = pipeline.transform(fixture);
+        let actual_message = actual.messages.unwrap().remove(0);
+
+        assert_eq!(
+            actual_message.reasoning_content,
+            Some("Need to inspect cwd first".to_string())
+        );
+        assert!(actual_message.reasoning_details.is_some());
+    }
+
+    #[test]
     fn test_openai_provider_trims_tool_call_ids() {
         let provider = openai("openai");
         let long_id = "call_12345678901234567890123456789012345678901234567890";
@@ -332,6 +403,7 @@ mod tests {
             reasoning_details: None,
             reasoning_text: None,
             reasoning_opaque: None,
+            reasoning_content: None,
             extra_content: None,
         }]);
 
@@ -362,6 +434,7 @@ mod tests {
             reasoning_details: None,
             reasoning_text: None,
             reasoning_opaque: None,
+            reasoning_content: None,
             extra_content: None,
         }]);
 
@@ -389,6 +462,7 @@ mod tests {
                 reasoning_details: None,
                 reasoning_text: None,
                 reasoning_opaque: None,
+                reasoning_content: None,
                 extra_content: Some(ExtraContent {
                     google: Some(GoogleMetadata { thought_signature: Some("sig123".to_string()) }),
                 }),
@@ -429,6 +503,7 @@ mod tests {
                 reasoning_details: None,
                 reasoning_text: None,
                 reasoning_opaque: None,
+                reasoning_content: None,
                 extra_content: Some(ExtraContent {
                     google: Some(GoogleMetadata { thought_signature: Some("sig123".to_string()) }),
                 }),
@@ -459,6 +534,7 @@ mod tests {
                     reasoning_details: None,
                     reasoning_text: None,
                     reasoning_opaque: None,
+                    reasoning_content: None,
                     extra_content: None,
                 },
                 Message {
@@ -470,6 +546,7 @@ mod tests {
                     reasoning_details: None,
                     reasoning_text: None,
                     reasoning_opaque: None,
+                    reasoning_content: None,
                     extra_content: None,
                 },
             ]);
@@ -516,6 +593,7 @@ mod tests {
                     reasoning_details: None,
                     reasoning_text: None,
                     reasoning_opaque: None,
+                    reasoning_content: None,
                     extra_content: None,
                 },
                 Message {
@@ -527,6 +605,7 @@ mod tests {
                     reasoning_details: None,
                     reasoning_text: None,
                     reasoning_opaque: None,
+                    reasoning_content: None,
                     extra_content: None,
                 },
             ]);
@@ -572,6 +651,7 @@ mod tests {
                 reasoning_details: None,
                 reasoning_text: None,
                 reasoning_opaque: None,
+                reasoning_content: None,
                 extra_content: Some(ExtraContent {
                     google: Some(GoogleMetadata { thought_signature: Some("sig123".to_string()) }),
                 }),
