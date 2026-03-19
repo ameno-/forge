@@ -36,8 +36,17 @@ This fork includes additional provider support not yet in upstream:
    - All models: 1M context, tool support, auto parameter tuning (temperature=1.0, top_p=0.95)
    - Alternative: Can also use via OpenRouter with `minimax/minimax-m2.7`
 
-3. **Kimi (Moonshot)** - Works via OpenRouter
-   - Model format: `moonshotai/kimi-k2-instruct`
+3. **Kimi Coding (Moonshot AI)** - Native provider support
+   - Env: `KIMI_API_KEY`
+   - API endpoint: `https://api.kimi.com/coding/v1`
+   - Custom User-Agent header for compatibility
+   - Reasoning replay support for tool calls
+   - Alternative: Can also use via OpenRouter with `moonshotai/kimi-k2-instruct`
+
+### Additional Features
+
+- **custom_headers** - Providers can specify custom HTTP headers in `provider.json`
+  - Used by Kimi Coding for `User-Agent: KimiCLI/1.0.0`
 
 ### Updating the Fork
 

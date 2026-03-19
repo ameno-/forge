@@ -1,7 +1,7 @@
 <h1 align="center">⚒️ Forge: AI-Enhanced Terminal Development Environment</h1>
 <p align="center">A comprehensive coding agent that integrates AI capabilities with your development environment</p>
 
-> **⚠️ FORK NOTICE**: This is `ameno-/forge` — a personal fork with additional provider support including **Gemini API**, **MiniMax**, and **Kimi** models. For the official version, see [antinomyhq/forge](https://github.com/antinomyhq/forge).
+> **⚠️ FORK NOTICE**: This is `ameno-/forge` — a personal fork with additional provider support including **Gemini API**, **MiniMax**, **Kimi Coding**, and **custom_headers** for providers. For the official version, see [antinomyhq/forge](https://github.com/antinomyhq/forge).
 
 <p align="center"><code>curl -fsSL https://forgecode.dev/cli | sh</code></p>
 
@@ -514,9 +514,28 @@ model: minimax/minimax-m2.7
 </details>
 
 <details>
-<summary><strong>Kimi (Moonshot AI)</strong></summary>
+<summary><strong>Kimi Coding (Moonshot AI)</strong></summary>
 
-Use via OpenRouter:
+**Native Kimi Coding provider** (recommended):
+
+```bash
+# .env
+KIMI_API_KEY=<your_kimi_api_key>
+```
+
+```yaml
+# forge.yaml
+model: kimi-k2
+provider: kimi_coding
+```
+
+**Features:**
+- Direct API access to Kimi Coding endpoint
+- Custom User-Agent header for compatibility
+- Reasoning replay support for tool calls
+- No routing through OpenRouter needed
+
+**Available via OpenRouter (alternative):**
 
 ```bash
 # .env
