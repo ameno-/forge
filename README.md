@@ -474,9 +474,32 @@ All models support:
 </details>
 
 <details>
-<summary><strong>MiniMax</strong></summary>
+<summary><strong>MiniMax (Native)</strong></summary>
 
-Use via OpenRouter or configure as OpenAI-compatible:
+**Native MiniMax provider** (recommended):
+
+```bash
+# .env
+MINIMAX_API_KEY=<your_minimax_api_key>
+```
+
+```yaml
+# forge.yaml
+model: MiniMax-M2.7
+```
+
+**Available Models:**
+- `MiniMax-M2.7` - Latest multimodal with advanced reasoning and tool use
+- `MiniMax-M2.5` - Fast model with strong reasoning abilities
+- `MiniMax-Text-01` - Text-focused model
+- `MiniMax-VL-01` - Vision-language model
+
+All models feature:
+- 1M token context window
+- Tool support with parallel tool calls
+- Automatic parameter tuning (temperature=1.0, top_p=0.95, top_k=20/40)
+
+**Alternative via OpenRouter:**
 
 ```bash
 # .env
@@ -487,8 +510,6 @@ OPENROUTER_API_KEY=<your_openrouter_api_key>
 # forge.yaml
 model: minimax/minimax-m2.7
 ```
-
-**Note:** MiniMax models are configured with automatic parameter adjustments (temperature, top_p, top_k) optimized for their inference requirements.
 
 </details>
 

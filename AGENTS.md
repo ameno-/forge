@@ -30,9 +30,11 @@ This fork includes additional provider support not yet in upstream:
    - Env: `GEMINI_API_KEY` or `GOOGLE_API_KEY`
    - Models: gemini-2.5-pro, gemini-2.5-flash, gemini-3.1-pro-preview, etc.
 
-2. **MiniMax** - Works via OpenRouter with auto parameter tuning
-   - Model format: `minimax/minimax-m2.7`
-   - Auto-sets temperature=1.0, top_p=0.95, top_k=64
+2. **MiniMax** - Native provider support
+   - Env: `MINIMAX_API_KEY`
+   - Models: MiniMax-M2.7, MiniMax-M2.5, MiniMax-Text-01, MiniMax-VL-01
+   - All models: 1M context, tool support, auto parameter tuning (temperature=1.0, top_p=0.95)
+   - Alternative: Can also use via OpenRouter with `minimax/minimax-m2.7`
 
 3. **Kimi (Moonshot)** - Works via OpenRouter
    - Model format: `moonshotai/kimi-k2-instruct`
