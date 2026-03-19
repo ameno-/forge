@@ -282,6 +282,7 @@ mod tests {
             auth_methods: vec![forge_domain::AuthMethod::ApiKey],
             url_params: vec![],
             models: Some(forge_domain::ModelSource::Url(model_url)),
+            custom_headers: None,
         };
 
         Ok(Anthropic::new(
@@ -349,6 +350,7 @@ mod tests {
             auth_methods: vec![forge_domain::AuthMethod::ApiKey],
             url_params: vec![],
             models: Some(forge_domain::ModelSource::Url(model_url.clone())),
+            custom_headers: None,
         };
 
         let anthropic = Anthropic::new(
@@ -488,6 +490,7 @@ mod tests {
             auth_methods: vec![forge_domain::AuthMethod::ApiKey],
             url_params: vec![],
             models: Some(forge_domain::ModelSource::Url(model_url)),
+            custom_headers: None,
         };
 
         let fixture = Anthropic::new(
@@ -566,6 +569,7 @@ mod tests {
             auth_methods: vec![forge_domain::AuthMethod::ApiKey],
             url_params: vec![],
             models: Some(forge_domain::ModelSource::Url(model_url)),
+            custom_headers: None,
         };
 
         let fixture = Anthropic::new(
@@ -642,6 +646,7 @@ mod tests {
             auth_methods: vec![forge_domain::AuthMethod::GoogleAdc],
             url_params: vec![],
             models: Some(forge_domain::ModelSource::Hardcoded(vec![])),
+            custom_headers: None,
         };
 
         let _anthropic = Anthropic::new(

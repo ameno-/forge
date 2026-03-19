@@ -201,6 +201,7 @@ mod tests {
                     auth_details: AuthDetails::ApiKey("test-key".to_string().into()),
                     url_params: Default::default(),
                 }),
+                custom_headers: None,
             })
         }
 

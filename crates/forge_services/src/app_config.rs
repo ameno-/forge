@@ -146,6 +146,7 @@ mod tests {
                             supports_reasoning: Some(false),
                             input_modalities: vec![InputModality::Text],
                         }])),
+                        custom_headers: None,
                     },
                     Provider {
                         id: ProviderId::ANTHROPIC,
@@ -171,6 +172,7 @@ mod tests {
                             supports_reasoning: Some(true),
                             input_modalities: vec![InputModality::Text],
                         }])),
+                        custom_headers: None,
                     },
                 ],
             }
@@ -240,6 +242,7 @@ mod tests {
                     auth_methods: p.auth_methods.clone(),
                     url_params: p.url_params.clone(),
                     credential: p.credential.clone(),
+                    custom_headers: None,
                 })
                 .ok_or_else(|| anyhow::anyhow!("Provider not found"))
         }
