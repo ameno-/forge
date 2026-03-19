@@ -1,6 +1,8 @@
 <h1 align="center">⚒️ Forge: AI-Enhanced Terminal Development Environment</h1>
 <p align="center">A comprehensive coding agent that integrates AI capabilities with your development environment</p>
 
+> **⚠️ FORK NOTICE**: This is `ameno-/forge` — a personal fork with additional provider support including **Gemini API**, **MiniMax**, and **Kimi** models. For the official version, see [antinomyhq/forge](https://github.com/antinomyhq/forge).
+
 <p align="center"><code>curl -fsSL https://forgecode.dev/cli | sh</code></p>
 
 [![CI Status](https://img.shields.io/github/actions/workflow/status/antinomyhq/forge/ci.yml?style=for-the-badge)](https://github.com/antinomyhq/forge/actions)
@@ -434,6 +436,75 @@ FORGE_API_KEY=<your_forge_api_key>
 ```yaml
 # forge.yaml
 model: claude-3.7-sonnet
+```
+
+</details>
+
+<details>
+<summary><strong>Gemini API (Google)</strong></summary>
+
+```bash
+# .env
+GEMINI_API_KEY=<your_gemini_api_key>
+# OR use GOOGLE_API_KEY if you prefer
+```
+
+```yaml
+# forge.yaml
+model: gemini-2.5-pro
+```
+
+**Available Models:**
+- `gemini-3.1-flash-lite-preview` - Cost-efficient, low latency
+- `gemini-3.1-pro-preview` - Most capable Gemini model
+- `gemini-3-flash-preview` - Fast with thinking support
+- `gemini-3-pro-preview` - Advanced reasoning
+- `gemini-2.5-pro` - Most capable Gemini 2.5
+- `gemini-2.5-flash` - Fast and efficient
+- `gemini-2.0-flash` - Versatile 2.0 model
+- `gemini-1.5-pro` - Capable 1.5 model
+- `gemini-1.5-flash` - Efficient 1.5 model
+- `gemini-1.5-flash-8b` - Compact 1.5 model
+
+All models support:
+- 1M token context window
+- Tool use
+- Vision (text + image input)
+
+</details>
+
+<details>
+<summary><strong>MiniMax</strong></summary>
+
+Use via OpenRouter or configure as OpenAI-compatible:
+
+```bash
+# .env
+OPENROUTER_API_KEY=<your_openrouter_api_key>
+```
+
+```yaml
+# forge.yaml
+model: minimax/minimax-m2.7
+```
+
+**Note:** MiniMax models are configured with automatic parameter adjustments (temperature, top_p, top_k) optimized for their inference requirements.
+
+</details>
+
+<details>
+<summary><strong>Kimi (Moonshot AI)</strong></summary>
+
+Use via OpenRouter:
+
+```bash
+# .env
+OPENROUTER_API_KEY=<your_openrouter_api_key>
+```
+
+```yaml
+# forge.yaml
+model: moonshotai/kimi-k2-instruct
 ```
 
 </details>

@@ -2,6 +2,59 @@
 
 This document contains guidelines and best practices for AI agents working with this codebase.
 
+## Fork Setup (ameno-/forge)
+
+This is a personal fork with custom provider support. To clone and set up on a new dev machine:
+
+```bash
+# Clone the fork
+git clone https://github.com/ameno-/forge.git forge-dev
+cd forge-dev
+
+# Build in debug mode (fastest for development)
+cargo build
+
+# Or build release for actual usage
+cargo build --release
+
+# The binary will be at:
+# - Debug: ./target/debug/forge
+# - Release: ./target/release/forge
+```
+
+### Custom Providers in this Fork
+
+This fork includes additional provider support not yet in upstream:
+
+1. **Gemini API** - Native Google Gemini support
+   - Env: `GEMINI_API_KEY` or `GOOGLE_API_KEY`
+   - Models: gemini-2.5-pro, gemini-2.5-flash, gemini-3.1-pro-preview, etc.
+
+2. **MiniMax** - Works via OpenRouter with auto parameter tuning
+   - Model format: `minimax/minimax-m2.7`
+   - Auto-sets temperature=1.0, top_p=0.95, top_k=64
+
+3. **Kimi (Moonshot)** - Works via OpenRouter
+   - Model format: `moonshotai/kimi-k2-instruct`
+
+### Updating the Fork
+
+```bash
+# Add upstream if needed
+git remote add upstream https://github.com/antinomyhq/forge.git
+
+# Fetch upstream changes
+git fetch upstream
+
+# Rebase or merge
+git rebase upstream/main
+# OR
+git merge upstream/main
+
+# Push to your fork
+git push origin main --force-with-lease
+```
+
 ## Error Management
 
 - Use `anyhow::Result` for error handling in services and repositories.
