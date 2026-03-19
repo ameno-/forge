@@ -71,6 +71,7 @@ impl ProviderId {
     pub const IO_INTELLIGENCE: ProviderId = ProviderId(Cow::Borrowed("io_intelligence"));
     pub const BEDROCK: ProviderId = ProviderId(Cow::Borrowed("bedrock"));
     pub const CODEX: ProviderId = ProviderId(Cow::Borrowed("codex"));
+    pub const OPENCODE_ZEN: ProviderId = ProviderId(Cow::Borrowed("opencode_zen"));
 
     /// Returns all built-in provider IDs
     ///
@@ -101,7 +102,9 @@ impl ProviderId {
             ProviderId::FORGE_SERVICES,
             ProviderId::IO_INTELLIGENCE,
             ProviderId::BEDROCK,
+            ProviderId::MINIMAX,
             ProviderId::CODEX,
+            ProviderId::OPENCODE_ZEN,
         ]
     }
 
@@ -170,6 +173,7 @@ impl std::str::FromStr for ProviderId {
             "anthropic_compatible" => ProviderId::ANTHROPIC_COMPATIBLE,
             "forge_services" => ProviderId::FORGE_SERVICES,
             "io_intelligence" => ProviderId::IO_INTELLIGENCE,
+            "bedrock" => ProviderId::BEDROCK,
             "codex" => ProviderId::CODEX,
             // For custom providers, use Cow::Owned to avoid memory leaks
             custom => ProviderId(Cow::Owned(custom.to_string())),
@@ -191,6 +195,7 @@ pub enum ProviderResponse {
     Anthropic,
     Bedrock,
     Google,
+    OpenCode,
 }
 
 /// Represents the source of models for a provider
@@ -285,10 +290,17 @@ impl AnyProvider {
         }
     }
 
-    /// Gets the resolved URL if this is a configured provider
-    pub fn url(&self) -> Option<&Url> {
+    /// Gets the URL for this provider.
+    ///
+    /// For configured providers, returns the resolved URL. For template
+    /// providers with no URL parameters (i.e. a hardcoded default URL in
+    /// provider.json), parses and returns the template string as a URL.
+    /// Returns `None` for template providers that require user-supplied URL
+    /// parameters.
+    pub fn url(&self) -> Option<Url> {
         match self {
-            AnyProvider::Url(p) => Some(p.url()),
+            AnyProvider::Url(p) => Some(p.url().clone()),
+            AnyProvider::Template(t) if t.url_params.is_empty() => Url::parse(&t.url.template).ok(),
             AnyProvider::Template(_) => None,
         }
     }

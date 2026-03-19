@@ -38,7 +38,8 @@ pub struct Message {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub reasoning_opaque: Option<String>,
     // Kimi format for replayed assistant tool-call reasoning
-    #[serde(skip_serializing_if = "Option::is_none")]
+    // kimi_k2 uses reasoning_content as flat string (similar to reasoning_text but aliased)
+    #[serde(skip_serializing_if = "Option::is_none", rename = "reasoning_content")]
     pub reasoning_content: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub extra_content: Option<ExtraContent>,
