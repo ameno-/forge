@@ -205,6 +205,7 @@ impl<F: EnvironmentInfra + FileReaderInfra + FileWriterInfra + HttpInfra>
 
             let has_vertex_provider = config.id == ProviderId::VERTEX_AI;
             let has_gemini_provider = config.id == ProviderId::GEMINI_API;
+            let has_minimax_provider = config.id == ProviderId::MINIMAX;
 
             if has_vertex_provider && self.infra.get_env_var("VERTEX_AI_AUTH_TOKEN").is_none() {
                 continue;
@@ -216,6 +217,10 @@ impl<F: EnvironmentInfra + FileReaderInfra + FileWriterInfra + HttpInfra>
                 if !has_google_api_key && !has_gemini_api_key {
                     continue;
                 }
+            }
+
+            if has_minimax_provider && self.infra.get_env_var("MINIMAX_API_KEY").is_none() {
+                continue;
             }
 
             // Try to create credential from environment variables
@@ -421,6 +426,17 @@ impl<F: EnvironmentInfra + FileReaderInfra + FileWriterInfra + HttpInfra>
                     provider.api_key_vars = Some("GOOGLE_API_KEY".to_string());
                 }
             }
+        }
+
+        // MiniMax provider - check for API key
+        let has_minimax_provider = configs
+            .0
+            .iter()
+            .any(|config| config.id == ProviderId::MINIMAX);
+
+        if has_minimax_provider && self.infra.get_env_var("MINIMAX_API_KEY").is_none() {
+            // Filter out minimax from configs if no API key
+            configs.0.retain(|config| config.id != ProviderId::MINIMAX);
         }
 
         configs.0

@@ -56,6 +56,7 @@ impl ProviderId {
     pub const ANTHROPIC: ProviderId = ProviderId(Cow::Borrowed("anthropic"));
     pub const CLAUDE_CODE: ProviderId = ProviderId(Cow::Borrowed("claude_code"));
     pub const GEMINI_API: ProviderId = ProviderId(Cow::Borrowed("gemini_api"));
+    pub const MINIMAX: ProviderId = ProviderId(Cow::Borrowed("minimax"));
     pub const VERTEX_AI: ProviderId = ProviderId(Cow::Borrowed("vertex_ai"));
     pub const VERTEX_AI_ANTHROPIC: ProviderId = ProviderId(Cow::Borrowed("vertex_ai_anthropic"));
     pub const BIG_MODEL: ProviderId = ProviderId(Cow::Borrowed("big_model"));
@@ -86,6 +87,7 @@ impl ProviderId {
             ProviderId::ANTHROPIC,
             ProviderId::CLAUDE_CODE,
             ProviderId::GEMINI_API,
+            ProviderId::MINIMAX,
             ProviderId::VERTEX_AI,
             ProviderId::VERTEX_AI_ANTHROPIC,
             ProviderId::BIG_MODEL,
@@ -115,6 +117,7 @@ impl ProviderId {
             "xai" => "XAI".to_string(),
             "zai" => "ZAI".to_string(),
             "gemini_api" => "GeminiAPI".to_string(),
+            "minimax" => "MiniMax".to_string(),
             "vertex_ai" => "VertexAI".to_string(),
             "vertex_ai_anthropic" => "VertexAIAnthropic".to_string(),
             "openai_compatible" => "OpenAICompatible".to_string(),
@@ -153,6 +156,7 @@ impl std::str::FromStr for ProviderId {
             "anthropic" => ProviderId::ANTHROPIC,
             "claude_code" => ProviderId::CLAUDE_CODE,
             "gemini_api" => ProviderId::GEMINI_API,
+            "minimax" => ProviderId::MINIMAX,
             "vertex_ai" => ProviderId::VERTEX_AI,
             "big_model" => ProviderId::BIG_MODEL,
             "azure" => ProviderId::AZURE,
@@ -501,6 +505,7 @@ mod tests {
         assert_eq!(ProviderId::ANTHROPIC.to_string(), "Anthropic");
         assert_eq!(ProviderId::GITHUB_COPILOT.to_string(), "GithubCopilot");
         assert_eq!(ProviderId::GEMINI_API.to_string(), "GeminiAPI");
+        assert_eq!(ProviderId::MINIMAX.to_string(), "MiniMax");
         assert_eq!(ProviderId::VERTEX_AI.to_string(), "VertexAI");
         assert_eq!(
             ProviderId::OPENAI_COMPATIBLE.to_string(),
@@ -533,10 +538,18 @@ mod tests {
     }
 
     #[test]
+    fn test_minimax_from_str() {
+        let actual = ProviderId::from_str("minimax").unwrap();
+        let expected = ProviderId::MINIMAX;
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
     fn test_codex_in_built_in_providers() {
         let built_in = ProviderId::built_in_providers();
         assert!(built_in.contains(&ProviderId::CODEX));
         assert!(built_in.contains(&ProviderId::GEMINI_API));
+        assert!(built_in.contains(&ProviderId::MINIMAX));
         assert!(built_in.contains(&ProviderId::OPENAI_RESPONSES_COMPATIBLE));
     }
 

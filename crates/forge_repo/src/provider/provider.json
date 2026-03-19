@@ -1044,6 +1044,54 @@
     "auth_methods": ["api_key"]
   },
   {
+    "id": "minimax",
+    "api_key_vars": "MINIMAX_API_KEY",
+    "url_param_vars": [],
+    "response_type": "OpenAI",
+    "url": "https://api.minimaxi.chat/v1/chat/completions",
+    "models": [
+      {
+        "id": "MiniMax-M2.7",
+        "name": "MiniMax M2.7",
+        "description": "MiniMax's latest multimodal model with advanced reasoning and tool use",
+        "context_length": 1000000,
+        "tools_supported": true,
+        "supports_parallel_tool_calls": true,
+        "supports_reasoning": true,
+        "input_modalities": ["text", "image"]
+      },
+      {
+        "id": "MiniMax-M2.5",
+        "name": "MiniMax M2.5",
+        "description": "Fast and capable MiniMax model with strong reasoning abilities",
+        "context_length": 1000000,
+        "tools_supported": true,
+        "supports_parallel_tool_calls": true,
+        "supports_reasoning": true,
+        "input_modalities": ["text", "image"]
+      },
+      {
+        "id": "MiniMax-Text-01",
+        "name": "MiniMax Text 01",
+        "description": "MiniMax text-focused model",
+        "context_length": 1000000,
+        "tools_supported": true,
+        "supports_parallel_tool_calls": true,
+        "input_modalities": ["text"]
+      },
+      {
+        "id": "MiniMax-VL-01",
+        "name": "MiniMax VL 01",
+        "description": "MiniMax vision-language model",
+        "context_length": 1000000,
+        "tools_supported": true,
+        "supports_parallel_tool_calls": true,
+        "input_modalities": ["text", "image"]
+      }
+    ],
+    "auth_methods": ["api_key"]
+  },
+  {
     "id": "vertex_ai",
     "api_key_vars": "VERTEX_AI_AUTH_TOKEN",
     "url_param_vars": ["PROJECT_ID", "LOCATION"],
