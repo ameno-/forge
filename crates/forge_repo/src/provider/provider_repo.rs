@@ -209,7 +209,8 @@ impl<F: EnvironmentInfra + FileReaderInfra + FileWriterInfra + HttpInfra>
 
             let has_vertex_provider = config.id == ProviderId::VERTEX_AI;
             let has_gemini_provider = config.id == ProviderId::GEMINI_API;
-            let has_minimax_provider = config.id == ProviderId::MINIMAX;
+            let has_minimax_provider = config.id == ProviderId::MINIMAX
+                || config.id == ProviderId::MINIMAX_ANTHROPIC;
 
             if has_vertex_provider && self.infra.get_env_var("VERTEX_AI_AUTH_TOKEN").is_none() {
                 continue;
@@ -433,15 +434,19 @@ impl<F: EnvironmentInfra + FileReaderInfra + FileWriterInfra + HttpInfra>
             }
         }
 
-        // MiniMax provider - check for API key
+        // MiniMax provider - check for API key (both OpenAI and Anthropic compatible endpoints)
         let has_minimax_provider = configs
             .0
             .iter()
-            .any(|config| config.id == ProviderId::MINIMAX);
+            .any(|config| {
+                config.id == ProviderId::MINIMAX || config.id == ProviderId::MINIMAX_ANTHROPIC
+            });
 
         if has_minimax_provider && self.infra.get_env_var("MINIMAX_API_KEY").is_none() {
             // Filter out minimax from configs if no API key
-            configs.0.retain(|config| config.id != ProviderId::MINIMAX);
+            configs.0.retain(|config| {
+                config.id != ProviderId::MINIMAX && config.id != ProviderId::MINIMAX_ANTHROPIC
+            });
         }
 
         configs.0
