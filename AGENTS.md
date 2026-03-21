@@ -2,6 +2,70 @@
 
 This document contains guidelines and best practices for AI agents working with this codebase.
 
+## Fork Setup (ameno-/forge)
+
+This is a personal fork with custom provider support. To clone and set up on a new dev machine:
+
+```bash
+# Clone the fork
+git clone https://github.com/ameno-/forge.git forge-dev
+cd forge-dev
+
+# Build in debug mode (fastest for development)
+cargo build
+
+# Or build release for actual usage
+cargo build --release
+
+# The binary will be at:
+# - Debug: ./target/debug/forge
+# - Release: ./target/release/forge
+```
+
+### Custom Providers in this Fork
+
+This fork includes additional provider support not yet in upstream:
+
+1. **Gemini API** - Native Google Gemini support
+   - Env: `GEMINI_API_KEY` or `GOOGLE_API_KEY`
+   - Models: gemini-2.5-pro, gemini-2.5-flash, gemini-3.1-pro-preview, etc.
+
+2. **MiniMax** - Native provider support
+   - Env: `MINIMAX_API_KEY`
+   - Models: MiniMax-M2.7, MiniMax-M2.5, MiniMax-Text-01, MiniMax-VL-01
+   - All models: 1M context, tool support, auto parameter tuning (temperature=1.0, top_p=0.95)
+   - Alternative: Can also use via OpenRouter with `minimax/minimax-m2.7`
+
+3. **Kimi Coding (Moonshot AI)** - Native provider support
+   - Env: `KIMI_API_KEY`
+   - API endpoint: `https://api.kimi.com/coding/v1`
+   - Custom User-Agent header for compatibility
+   - Reasoning replay support for tool calls
+   - Alternative: Can also use via OpenRouter with `moonshotai/kimi-k2-instruct`
+
+### Additional Features
+
+- **custom_headers** - Providers can specify custom HTTP headers in `provider.json`
+  - Used by Kimi Coding for `User-Agent: KimiCLI/1.0.0`
+
+### Updating the Fork
+
+```bash
+# Add upstream if needed
+git remote add upstream https://github.com/antinomyhq/forge.git
+
+# Fetch upstream changes
+git fetch upstream
+
+# Rebase or merge
+git rebase upstream/main
+# OR
+git merge upstream/main
+
+# Push to your fork
+git push origin main --force-with-lease
+```
+
 ## Error Management
 
 - Use `anyhow::Result` for error handling in services and repositories.

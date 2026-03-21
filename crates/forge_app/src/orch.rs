@@ -6,6 +6,7 @@ use async_recursion::async_recursion;
 use derive_setters::Setters;
 use forge_domain::{Agent, *};
 use forge_template::Element;
+use tokio::sync::Notify;
 use tracing::warn;
 
 use crate::TemplateEngine;
@@ -70,8 +71,16 @@ impl<S: AgentService> Orchestrator<S> {
             // Send the start notification for system tools and not agent as a tool
             let is_system_tool = system_tools.contains(&tool_call.name);
             if is_system_tool {
-                self.send(ChatResponse::ToolCallStart(tool_call.clone()))
-                    .await?;
+                let notifier = Arc::new(Notify::new());
+                self.send(ChatResponse::ToolCallStart {
+                    tool_call: tool_call.clone(),
+                    notifier: notifier.clone(),
+                })
+                .await?;
+                // Wait for the UI to acknowledge it has rendered the tool header
+                // before we execute the tool. This prevents tool stdout from
+                // appearing before the tool name is printed.
+                notifier.notified().await;
             }
 
             // Fire the ToolcallStart lifecycle event
@@ -259,12 +268,6 @@ impl<S: AgentService> Orchestrator<S> {
                 .handle(&response_event, &mut self.conversation)
                 .await?;
 
-            // Update context from conversation after hook runs (compaction may have
-            // modified it)
-            if let Some(updated_context) = &self.conversation.context {
-                context = updated_context.clone();
-            }
-
             // Turn is completed, if finish_reason is 'stop'. Gemini models return stop as
             // finish reason with tool calls.
             is_complete =
@@ -281,6 +284,11 @@ impl<S: AgentService> Orchestrator<S> {
             let mut tool_call_records = self
                 .execute_tool_calls(&message.tool_calls, &tool_context)
                 .await?;
+
+            // Update context from conversation after tool-call hooks run
+            if let Some(updated_context) = &self.conversation.context {
+                context = updated_context.clone();
+            }
 
             self.error_tracker.adjust_record(&tool_call_records);
             let allowed_max_attempts = self.error_tracker.limit();
@@ -300,20 +308,11 @@ impl<S: AgentService> Orchestrator<S> {
                 }
             }
 
-            let reasoning_details = message.reasoning_details.or_else(|| {
-                message.reasoning.as_ref().map(|reasoning| {
-                    vec![ReasoningFull {
-                        text: Some(reasoning.clone()),
-                        type_of: Some("reasoning.text".to_string()),
-                        ..Default::default()
-                    }]
-                })
-            });
-
             context = context.append_message(
                 message.content.clone(),
                 message.thought_signature.clone(),
-                reasoning_details,
+                message.reasoning.clone(),
+                message.reasoning_details.clone(),
                 message.usage,
                 tool_call_records,
             );

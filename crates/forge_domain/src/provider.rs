@@ -56,6 +56,8 @@ impl ProviderId {
     pub const XAI: ProviderId = ProviderId(Cow::Borrowed("xai"));
     pub const ANTHROPIC: ProviderId = ProviderId(Cow::Borrowed("anthropic"));
     pub const CLAUDE_CODE: ProviderId = ProviderId(Cow::Borrowed("claude_code"));
+    pub const GEMINI_API: ProviderId = ProviderId(Cow::Borrowed("gemini_api"));
+    pub const MINIMAX: ProviderId = ProviderId(Cow::Borrowed("minimax"));
     pub const VERTEX_AI: ProviderId = ProviderId(Cow::Borrowed("vertex_ai"));
     pub const VERTEX_AI_ANTHROPIC: ProviderId = ProviderId(Cow::Borrowed("vertex_ai_anthropic"));
     pub const BIG_MODEL: ProviderId = ProviderId(Cow::Borrowed("big_model"));
@@ -68,8 +70,8 @@ impl ProviderId {
     pub const FORGE_SERVICES: ProviderId = ProviderId(Cow::Borrowed("forge_services"));
     pub const IO_INTELLIGENCE: ProviderId = ProviderId(Cow::Borrowed("io_intelligence"));
     pub const BEDROCK: ProviderId = ProviderId(Cow::Borrowed("bedrock"));
-    pub const MINIMAX: ProviderId = ProviderId(Cow::Borrowed("minimax"));
     pub const CODEX: ProviderId = ProviderId(Cow::Borrowed("codex"));
+    pub const OPENCODE_ZEN: ProviderId = ProviderId(Cow::Borrowed("opencode_zen"));
 
     /// Returns all built-in provider IDs
     ///
@@ -87,6 +89,8 @@ impl ProviderId {
             ProviderId::XAI,
             ProviderId::ANTHROPIC,
             ProviderId::CLAUDE_CODE,
+            ProviderId::GEMINI_API,
+            ProviderId::MINIMAX,
             ProviderId::VERTEX_AI,
             ProviderId::VERTEX_AI_ANTHROPIC,
             ProviderId::BIG_MODEL,
@@ -100,6 +104,7 @@ impl ProviderId {
             ProviderId::BEDROCK,
             ProviderId::MINIMAX,
             ProviderId::CODEX,
+            ProviderId::OPENCODE_ZEN,
         ]
     }
 
@@ -116,13 +121,15 @@ impl ProviderId {
             "openai" => "OpenAI".to_string(),
             "xai" => "XAI".to_string(),
             "zai" => "ZAI".to_string(),
+            "gemini_api" => "GeminiAPI".to_string(),
+            "minimax" => "MiniMax".to_string(),
             "vertex_ai" => "VertexAI".to_string(),
             "vertex_ai_anthropic" => "VertexAIAnthropic".to_string(),
             "openai_compatible" => "OpenAICompatible".to_string(),
             "openai_responses_compatible" => "OpenAIResponsesCompatible".to_string(),
             "io_intelligence" => "IOIntelligence".to_string(),
-            "minimax" => "MiniMax".to_string(),
             "codex" => "Codex".to_string(),
+            "kimi_coding" => "KimiCoding".to_string(),
             _ => {
                 // For other providers, use UpperCamelCase conversion
                 use convert_case::{Case, Casing};
@@ -155,6 +162,8 @@ impl std::str::FromStr for ProviderId {
             "xai" => ProviderId::XAI,
             "anthropic" => ProviderId::ANTHROPIC,
             "claude_code" => ProviderId::CLAUDE_CODE,
+            "gemini_api" => ProviderId::GEMINI_API,
+            "minimax" => ProviderId::MINIMAX,
             "vertex_ai" => ProviderId::VERTEX_AI,
             "big_model" => ProviderId::BIG_MODEL,
             "azure" => ProviderId::AZURE,
@@ -164,7 +173,7 @@ impl std::str::FromStr for ProviderId {
             "anthropic_compatible" => ProviderId::ANTHROPIC_COMPATIBLE,
             "forge_services" => ProviderId::FORGE_SERVICES,
             "io_intelligence" => ProviderId::IO_INTELLIGENCE,
-            "minimax" => ProviderId::MINIMAX,
+            "bedrock" => ProviderId::BEDROCK,
             "codex" => ProviderId::CODEX,
             // For custom providers, use Cow::Owned to avoid memory leaks
             custom => ProviderId(Cow::Owned(custom.to_string())),
@@ -186,6 +195,7 @@ pub enum ProviderResponse {
     Anthropic,
     Bedrock,
     Google,
+    OpenCode,
 }
 
 /// Represents the source of models for a provider
@@ -280,10 +290,17 @@ impl AnyProvider {
         }
     }
 
-    /// Gets the resolved URL if this is a configured provider
-    pub fn url(&self) -> Option<&Url> {
+    /// Gets the URL for this provider.
+    ///
+    /// For configured providers, returns the resolved URL. For template
+    /// providers with no URL parameters (i.e. a hardcoded default URL in
+    /// provider.json), parses and returns the template string as a URL.
+    /// Returns `None` for template providers that require user-supplied URL
+    /// parameters.
+    pub fn url(&self) -> Option<Url> {
         match self {
-            AnyProvider::Url(p) => Some(p.url()),
+            AnyProvider::Url(p) => Some(p.url().clone()),
+            AnyProvider::Template(t) if t.url_params.is_empty() => Url::parse(&t.url.template).ok(),
             AnyProvider::Template(_) => None,
         }
     }
@@ -513,6 +530,8 @@ mod tests {
         assert_eq!(ProviderId::XAI.to_string(), "XAI");
         assert_eq!(ProviderId::ANTHROPIC.to_string(), "Anthropic");
         assert_eq!(ProviderId::GITHUB_COPILOT.to_string(), "GithubCopilot");
+        assert_eq!(ProviderId::GEMINI_API.to_string(), "GeminiAPI");
+        assert_eq!(ProviderId::MINIMAX.to_string(), "MiniMax");
         assert_eq!(ProviderId::VERTEX_AI.to_string(), "VertexAI");
         assert_eq!(
             ProviderId::OPENAI_COMPATIBLE.to_string(),
@@ -528,12 +547,27 @@ mod tests {
         );
         assert_eq!(ProviderId::IO_INTELLIGENCE.to_string(), "IOIntelligence");
         assert_eq!(ProviderId::CODEX.to_string(), "Codex");
+        assert_eq!(ProviderId::KIMI_CODING.to_string(), "KimiCoding");
     }
 
     #[test]
     fn test_codex_from_str() {
         let actual = ProviderId::from_str("codex").unwrap();
         let expected = ProviderId::CODEX;
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn test_gemini_api_from_str() {
+        let actual = ProviderId::from_str("gemini_api").unwrap();
+        let expected = ProviderId::GEMINI_API;
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn test_minimax_from_str() {
+        let actual = ProviderId::from_str("minimax").unwrap();
+        let expected = ProviderId::MINIMAX;
         assert_eq!(actual, expected);
     }
 
@@ -548,6 +582,8 @@ mod tests {
     fn test_codex_in_built_in_providers() {
         let built_in = ProviderId::built_in_providers();
         assert!(built_in.contains(&ProviderId::CODEX));
+        assert!(built_in.contains(&ProviderId::GEMINI_API));
+        assert!(built_in.contains(&ProviderId::MINIMAX));
         assert!(built_in.contains(&ProviderId::KIMI_CODING));
         assert!(built_in.contains(&ProviderId::OPENAI_RESPONSES_COMPATIBLE));
     }

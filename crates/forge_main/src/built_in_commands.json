@@ -8,16 +8,32 @@
     "description": "Display environment information [alias: e]"
   },
   {
-    "command": "provider",
-    "description": "Switch the providers [alias: p]"
+    "command": "config-provider",
+    "description": "Switch the providers [alias: p, provider]"
+  },
+  {
+    "command": "config-model",
+    "description": "Switch the models [alias: cm]"
   },
   {
     "command": "model",
-    "description": "Switch the models [alias: m]"
+    "description": "Switch the model for the current session only, without modifying global config [alias: m]"
+  },
+  {
+    "command": "model-reset",
+    "description": "Reset session model to use global config [alias: mr]"
   },
   {
     "command": "config-commit-model",
     "description": "Set the model used for commit message generation [alias: ccm]"
+  },
+  {
+    "command": "config-suggest-model",
+    "description": "Set the model used for command suggestion generation [alias: csm]"
+  },
+  {
+    "command": "config",
+    "description": "List current configuration values"
   },
   {
     "command": "new",

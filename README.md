@@ -1,6 +1,8 @@
 <h1 align="center">⚒️ Forge: AI-Enhanced Terminal Development Environment</h1>
 <p align="center">A comprehensive coding agent that integrates AI capabilities with your development environment</p>
 
+> **⚠️ FORK NOTICE**: This is `ameno-/forge` — a personal fork with additional provider support including **Gemini API**, **MiniMax**, **Kimi Coding**, and **custom_headers** for providers. For the official version, see [antinomyhq/forge](https://github.com/antinomyhq/forge).
+
 <p align="center"><code>curl -fsSL https://forgecode.dev/cli | sh</code></p>
 
 [![CI Status](https://img.shields.io/github/actions/workflow/status/antinomyhq/forge/ci.yml?style=for-the-badge)](https://github.com/antinomyhq/forge/actions)
@@ -438,6 +440,115 @@ model: claude-3.7-sonnet
 
 </details>
 
+<details>
+<summary><strong>Gemini API (Google)</strong></summary>
+
+```bash
+# .env
+GEMINI_API_KEY=<your_gemini_api_key>
+# OR use GOOGLE_API_KEY if you prefer
+```
+
+```yaml
+# forge.yaml
+model: gemini-2.5-pro
+```
+
+**Available Models:**
+- `gemini-3.1-flash-lite-preview` - Cost-efficient, low latency
+- `gemini-3.1-pro-preview` - Most capable Gemini model
+- `gemini-3-flash-preview` - Fast with thinking support
+- `gemini-3-pro-preview` - Advanced reasoning
+- `gemini-2.5-pro` - Most capable Gemini 2.5
+- `gemini-2.5-flash` - Fast and efficient
+- `gemini-2.0-flash` - Versatile 2.0 model
+- `gemini-1.5-pro` - Capable 1.5 model
+- `gemini-1.5-flash` - Efficient 1.5 model
+- `gemini-1.5-flash-8b` - Compact 1.5 model
+
+All models support:
+- 1M token context window
+- Tool use
+- Vision (text + image input)
+
+</details>
+
+<details>
+<summary><strong>MiniMax (Native)</strong></summary>
+
+**Native MiniMax provider** (recommended):
+
+```bash
+# .env
+MINIMAX_API_KEY=<your_minimax_api_key>
+```
+
+```yaml
+# forge.yaml
+model: MiniMax-M2.7
+```
+
+**Available Models:**
+- `MiniMax-M2.7` - Latest multimodal with advanced reasoning and tool use
+- `MiniMax-M2.5` - Fast model with strong reasoning abilities
+- `MiniMax-Text-01` - Text-focused model
+- `MiniMax-VL-01` - Vision-language model
+
+All models feature:
+- 1M token context window
+- Tool support with parallel tool calls
+- Automatic parameter tuning (temperature=1.0, top_p=0.95, top_k=20/40)
+
+**Alternative via OpenRouter:**
+
+```bash
+# .env
+OPENROUTER_API_KEY=<your_openrouter_api_key>
+```
+
+```yaml
+# forge.yaml
+model: minimax/minimax-m2.7
+```
+
+</details>
+
+<details>
+<summary><strong>Kimi Coding (Moonshot AI)</strong></summary>
+
+**Native Kimi Coding provider** (recommended):
+
+```bash
+# .env
+KIMI_API_KEY=<your_kimi_api_key>
+```
+
+```yaml
+# forge.yaml
+model: kimi-k2
+provider: kimi_coding
+```
+
+**Features:**
+- Direct API access to Kimi Coding endpoint
+- Custom User-Agent header for compatibility
+- Reasoning replay support for tool calls
+- No routing through OpenRouter needed
+
+**Available via OpenRouter (alternative):**
+
+```bash
+# .env
+OPENROUTER_API_KEY=<your_openrouter_api_key>
+```
+
+```yaml
+# forge.yaml
+model: moonshotai/kimi-k2-instruct
+```
+
+</details>
+
 </details>
 
 ---
@@ -513,7 +624,7 @@ Configuring the tool calls settings:
 ```bash
 # .env
 FORGE_TOOL_TIMEOUT=300         # Maximum execution time in seconds for a tool before it is terminated to prevent hanging the session. (default: 300)
-FORGE_MAX_IMAGE_SIZE=262144    # Maximum image file size in bytes for read_image operations (default: 262144 - 256 KB)
+FORGE_MAX_IMAGE_SIZE=10485760  # Maximum image file size in bytes for read_image operations (default: 10485760 - 10 MB)
 FORGE_DUMP_AUTO_OPEN=false     # Automatically open dump files in browser (default: false)
 FORGE_DEBUG_REQUESTS=/path/to/debug/requests.json  # Write debug HTTP request files to specified path (supports absolute and relative paths)
 ```
@@ -599,6 +710,20 @@ The `FORGE_LOG` variable controls the logging level for Forge's internal operati
 - `forge=info` - Informational messages (default when tracking enabled)
 - `forge=debug` - Debug information (default when tracking disabled)
 - `forge=trace` - Detailed tracing
+
+</details>
+
+<details>
+<summary><strong>Tracking Configuration</strong></summary>
+
+Control tracking of user-identifying metadata in telemetry events:
+
+```bash
+# .env
+FORGE_TRACKER=false                   # Disable tracking enrichment metadata (default: true)
+```
+
+The `FORGE_TRACKER` variable controls whether tracking enrichment metadata is included in telemetry events.
 
 </details>
 
@@ -771,6 +896,18 @@ MCP tools can be used as part of multi-agent workflows, allowing specialized age
 ## Documentation
 
 For comprehensive documentation on all features and capabilities, please visit the [documentation site](https://github.com/antinomyhq/forge/tree/main/docs).
+
+---
+
+## Installation
+
+```bash
+# YOLO
+curl -fsSL https://forgecode.dev/cli | sh
+
+# Package managers
+nix run github:antinomyhq/forge # for latest dev branch
+```
 
 ---
 

@@ -207,6 +207,26 @@ impl<F: EnvironmentInfra + FileReaderInfra + FileWriterInfra + HttpInfra>
                 continue;
             }
 
+            let has_vertex_provider = config.id == ProviderId::VERTEX_AI;
+            let has_gemini_provider = config.id == ProviderId::GEMINI_API;
+            let has_minimax_provider = config.id == ProviderId::MINIMAX;
+
+            if has_vertex_provider && self.infra.get_env_var("VERTEX_AI_AUTH_TOKEN").is_none() {
+                continue;
+            }
+
+            if has_gemini_provider {
+                let has_google_api_key = self.infra.get_env_var("GOOGLE_API_KEY").is_some();
+                let has_gemini_api_key = self.infra.get_env_var("GEMINI_API_KEY").is_some();
+                if !has_google_api_key && !has_gemini_api_key {
+                    continue;
+                }
+            }
+
+            if has_minimax_provider && self.infra.get_env_var("MINIMAX_API_KEY").is_none() {
+                continue;
+            }
+
             // Try to create credential from environment variables
             if let Ok(credential) = self.create_credential_from_env(&config) {
                 migrated_providers.push(config.id);
@@ -258,7 +278,6 @@ impl<F: EnvironmentInfra + FileReaderInfra + FileWriterInfra + HttpInfra>
     }
 
     /// Creates a provider with template URLs (not rendered).
-    /// The service layer is responsible for rendering templates.
     async fn create_provider(
         &self,
         config: &ProviderConfig,
@@ -392,6 +411,38 @@ impl<F: EnvironmentInfra + FileReaderInfra + FileWriterInfra + HttpInfra>
         configs.merge(ProviderConfigs(
             self.get_custom_provider_configs().await.unwrap_or_default(),
         ));
+
+        let has_gemini_provider = configs
+            .0
+            .iter()
+            .any(|config| config.id == ProviderId::GEMINI_API);
+        let has_gemini_api_key = self.infra.get_env_var("GEMINI_API_KEY").is_some();
+        let has_google_api_key = self.infra.get_env_var("GOOGLE_API_KEY").is_some();
+
+        if has_gemini_provider {
+            if let Some(provider) = configs
+                .0
+                .iter_mut()
+                .find(|config| config.id == ProviderId::GEMINI_API)
+            {
+                if has_gemini_api_key {
+                    provider.api_key_vars = Some("GEMINI_API_KEY".to_string());
+                } else if has_google_api_key {
+                    provider.api_key_vars = Some("GOOGLE_API_KEY".to_string());
+                }
+            }
+        }
+
+        // MiniMax provider - check for API key
+        let has_minimax_provider = configs
+            .0
+            .iter()
+            .any(|config| config.id == ProviderId::MINIMAX);
+
+        if has_minimax_provider && self.infra.get_env_var("MINIMAX_API_KEY").is_none() {
+            // Filter out minimax from configs if no API key
+            configs.0.retain(|config| config.id != ProviderId::MINIMAX);
+        }
 
         configs.0
     }
@@ -696,7 +747,7 @@ mod env_tests {
             &self,
             _batch_size: usize,
             _paths: Vec<PathBuf>,
-        ) -> impl futures::Stream<Item = anyhow::Result<Vec<(PathBuf, String)>>> + Send {
+        ) -> impl futures::Stream<Item = (PathBuf, anyhow::Result<String>)> + Send {
             futures::stream::empty()
         }
 
@@ -1176,8 +1227,7 @@ mod env_tests {
                 &self,
                 _batch_size: usize,
                 _paths: Vec<PathBuf>,
-            ) -> impl futures::Stream<Item = anyhow::Result<Vec<(PathBuf, String)>>> + Send
-            {
+            ) -> impl futures::Stream<Item = (PathBuf, anyhow::Result<String>)> + Send {
                 futures::stream::empty()
             }
 

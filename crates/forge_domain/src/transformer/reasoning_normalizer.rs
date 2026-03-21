@@ -59,12 +59,9 @@ impl Transformer for ReasoningNormalizer {
             .map(|(idx, _)| idx);
 
         // Check if the last assistant message has reasoning
-        let preserve_last_reasoning = last_assistant_idx.and_then(|idx| {
-            context
-                .messages
-                .get(idx)
-                .map(|message| message.has_reasoning_details())
-        }) == Some(true);
+        let preserve_last_reasoning = last_assistant_idx
+            .and_then(|idx| context.messages.get(idx).map(|message| message.has_reasoning_details()))
+            == Some(true);
 
         for (idx, message) in context.messages.iter_mut().enumerate() {
             if let crate::ContextMessage::Text(text_msg) = &mut **message {
@@ -186,11 +183,7 @@ mod tests {
             })
             .collect::<Vec<_>>();
 
-        assert_eq!(
-            assistant_messages.len(),
-            3,
-            "Expected three assistant messages"
-        );
+        assert_eq!(assistant_messages.len(), 3, "Expected three assistant messages");
         assert_eq!(assistant_messages[0].reasoning_details, None);
         assert_eq!(assistant_messages[1].reasoning_details, None);
         assert!(assistant_messages[2].reasoning_details.is_some());
@@ -317,9 +310,7 @@ mod tests {
 
         let tool_call = crate::ToolCallFull::new("shell")
             .call_id(crate::ToolCallId::new("call_kimi_1"))
-            .arguments(crate::ToolCallArguments::from(
-                serde_json::json!({"command": "pwd"}),
-            ));
+            .arguments(crate::ToolCallArguments::from(serde_json::json!({"command": "pwd"})));
 
         let fixture = Context::default()
             .reasoning(ReasoningConfig::default().enabled(true))
@@ -330,11 +321,9 @@ mod tests {
                 Some(replay_reasoning.clone()),
                 Some(vec![tool_call]),
             ))
-            .add_tool_results(vec![
-                crate::ToolResult::new("shell")
-                    .call_id(Some(crate::ToolCallId::new("call_kimi_1")))
-                    .output(Ok(crate::ToolOutput::text("/workspace".to_string()))),
-            ])
+            .add_tool_results(vec![crate::ToolResult::new("shell")
+                .call_id(Some(crate::ToolCallId::new("call_kimi_1")))
+                .output(Ok(crate::ToolOutput::text("/workspace".to_string())))])
             .add_message(ContextMessage::user("Continue", None))
             .add_message(ContextMessage::assistant(
                 "Here is the result",
@@ -355,19 +344,9 @@ mod tests {
             })
             .collect::<Vec<_>>();
 
-        assert_eq!(
-            assistant_messages.len(),
-            2,
-            "Expected two assistant messages"
-        );
-        assert_eq!(
-            assistant_messages[0].reasoning_details,
-            Some(replay_reasoning)
-        );
-        assert_eq!(
-            assistant_messages[1].reasoning_details,
-            Some(last_reasoning)
-        );
+        assert_eq!(assistant_messages.len(), 2, "Expected two assistant messages");
+        assert_eq!(assistant_messages[0].reasoning_details, Some(replay_reasoning));
+        assert_eq!(assistant_messages[1].reasoning_details, Some(last_reasoning));
 
         let snapshot = TransformationSnapshot::new(
             "ReasoningNormalizer_kimi_replay_preserves_tool_call_reasoning",
@@ -377,3 +356,4 @@ mod tests {
         assert_yaml_snapshot!(snapshot);
     }
 }
+
