@@ -785,7 +785,6 @@ mod tests {
         assert_eq!(actual.top_k, Some(40));
     }
 
-
     #[test]
     fn test_openai_provider_does_not_enforce_strict_tool_schema() {
         let provider = openai("openai");
