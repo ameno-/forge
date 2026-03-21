@@ -2005,6 +2005,9 @@
   {
     "id": "minimax_anthropic",
     "api_key_vars": "MINIMAX_API_KEY",
+    "url_param_vars": [],
+    "response_type": "Anthropic",
+    "url": "https://api.minimax.io/anthropic/v1/messages",
     "models": [
       {
         "id": "MiniMax-M2.7",
