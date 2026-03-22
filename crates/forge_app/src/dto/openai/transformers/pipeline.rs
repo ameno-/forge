@@ -60,7 +60,19 @@ impl Transformer for ProviderPipeline<'_> {
             GitHubCopilotReasoning.when(move |_| provider.id == ProviderId::GITHUB_COPILOT);
 
         let kimi_reasoning = KimiReasoning.when(move |_| provider.id == ProviderId::KIMI_CODING);
-        let kimi_k2_reasoning = KimiK2Reasoning.when(when_model("kimi"));
+        // KimiK2Reasoning is for the Kimi K2 model via OpenRouter (moonshotai/kimi-k2-instruct).
+        // It must NOT apply to the native KIMI_CODING provider since KimiReasoning already
+        // handles reasoning normalization there, and KimiK2Reasoning would strip reasoning_details
+        // that the native provider still needs.
+        let kimi_k2_reasoning = KimiK2Reasoning
+            .when(when_model("kimi"))
+            .when(move |_| provider.id != ProviderId::KIMI_CODING);
+
+        // Apply MiniMax parameter tuning for native MiniMax provider (OpenRouter
+        // already handles this via or_transformers, but the native provider does not
+        // go through that path)
+        let minimax_params =
+            SetMinimaxParams.when(move |_| provider.id == ProviderId::MINIMAX);
 
         let cerebras_compat = MakeCerebrasCompat.when(move |_| provider.id == ProviderId::CEREBRAS);
 
@@ -77,6 +89,7 @@ impl Transformer for ProviderPipeline<'_> {
             .pipe(github_copilot_reasoning)
             .pipe(kimi_reasoning)
             .pipe(kimi_k2_reasoning)
+            .pipe(minimax_params)
             .pipe(cerebras_compat)
             .pipe(trim_tool_call_ids)
             .pipe(strict_tool_schema)
@@ -727,6 +740,49 @@ mod tests {
         });
 
         assert_eq!(actual.tools.unwrap()[0].function.parameters, expected);
+    }
+
+    fn minimax(key: &str) -> Provider<Url> {
+        Provider {
+            id: ProviderId::MINIMAX,
+            provider_type: Default::default(),
+            response: Some(ProviderResponse::OpenAI),
+            url: Url::parse("https://api.minimaxi.chat/v1/chat/completions").unwrap(),
+            auth_methods: vec![forge_domain::AuthMethod::ApiKey],
+            url_params: vec![],
+            credential: make_credential(ProviderId::MINIMAX, key),
+            custom_headers: None,
+            models: Some(ModelSource::Hardcoded(vec![])),
+        }
+    }
+
+    #[test]
+    fn test_native_minimax_provider_applies_parameter_tuning() {
+        let provider = minimax("minimax-key");
+        let fixture = Request::default()
+            .model(ModelId::new("MiniMax-M2.7"))
+            .temperature(0.7)
+            .top_p(0.8);
+
+        let mut pipeline = ProviderPipeline::new(&provider);
+        let actual = pipeline.transform(fixture);
+
+        assert_eq!(actual.temperature, Some(1.0));
+        assert_eq!(actual.top_p, Some(0.95));
+        assert_eq!(actual.top_k, Some(20));
+    }
+
+    #[test]
+    fn test_native_minimax_m2_1_provider_applies_higher_top_k() {
+        let provider = minimax("minimax-key");
+        let fixture = Request::default().model(ModelId::new("MiniMax-M2.1"));
+
+        let mut pipeline = ProviderPipeline::new(&provider);
+        let actual = pipeline.transform(fixture);
+
+        assert_eq!(actual.temperature, Some(1.0));
+        assert_eq!(actual.top_p, Some(0.95));
+        assert_eq!(actual.top_k, Some(40));
     }
 
     #[test]

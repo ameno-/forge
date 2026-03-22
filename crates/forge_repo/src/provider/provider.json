@@ -2003,7 +2003,7 @@
     "auth_methods": ["google_adc"]
   },
   {
-    "id": "minimax",
+    "id": "minimax_anthropic",
     "api_key_vars": "MINIMAX_API_KEY",
     "url_param_vars": [],
     "response_type": "Anthropic",
